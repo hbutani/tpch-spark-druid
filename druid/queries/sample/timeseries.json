@@ -1,0 +1,10 @@
+{
+  "queryType": "timeseries",
+  "dataSource": "wikipedia",
+  "intervals": [ "2010-01-01/2020-01-01" ],
+  "granularity": "all",
+  "aggregations": [
+    {"type": "longSum", "fieldName": "count", "name": "edit_count"},
+    {"type": "doubleSum", "fieldName": "added", "name": "chars_added"}
+  ]
+}

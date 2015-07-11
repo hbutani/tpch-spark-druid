@@ -1,0 +1,63 @@
+{
+  "queryType": "groupBy",
+  "dataSource": "tpch",
+  "granularity": "all",
+  "dimensions": ["l_returnflag", "l_linestatus"],
+  "limitSpec": { "type": "default", "limit": 10, "columns": ["l_returnflag", "l_linestatus"] },
+  "aggregations": [
+    { "type": "longSum", "name": "count", "fieldName": "count" },
+    { "type": "longSum", "name": "sum_quantity", "fieldName": "sum_l_quantity" },
+    { "type": "doubleSum", "name": "sum_base_price", "fieldName": "l_extendedprice" },
+    { "type": "doubleSum", "name": "l_discount", "fieldName": "l_discount" },
+    { "type": "doubleSum", "name": "l_tax", "fieldName": "l_tax" },
+    {
+      "type": "cardinality",
+      "name": "count_order",
+      "fieldNames": [ "o_orderkey" ],
+      "byRow": true
+    }
+  ],
+  "postAggregations": [
+    { "type": "arithmetic",
+      "name": "sum_disc_price",
+      "fn": "-",
+      "fields": [
+        { "type": "fieldAccess", "name": "sum_base_price", "fieldName": "sum_base_price" },
+        { "type": "fieldAccess", "name": "l_discount", "fieldName": "l_discount" }
+      ]
+    },
+    { "type": "arithmetic",
+      "name": "sum_charge",
+      "fn": "-",
+      "fields": [
+        { "type": "fieldAccess", "name": "sum_base_price", "fieldName": "sum_base_price" },
+        { "type": "fieldAccess", "name": "l_tax", "fieldName": "l_tax" }
+      ]
+    },
+    { "type": "arithmetic",
+      "name": "avg_qty",
+      "fn": "/",
+      "fields": [
+        { "type": "fieldAccess", "name": "sum_quantity", "fieldName": "sum_quantity" },
+        { "type": "fieldAccess", "name": "count", "fieldName": "count" }
+      ]
+    },
+    { "type": "arithmetic",
+      "name": "avg_price",
+      "fn": "/",
+      "fields": [
+        { "type": "fieldAccess", "name": "sum_base_price", "fieldName": "sum_base_price" },
+        { "type": "fieldAccess", "name": "count", "fieldName": "count" }
+      ]
+    },
+    { "type": "arithmetic",
+      "name": "avg_disc",
+      "fn": "/",
+      "fields": [
+        { "type": "fieldAccess", "name": "l_discount", "fieldName": "l_discount" },
+        { "type": "fieldAccess", "name": "count", "fieldName": "count" }
+      ]
+    }
+  ],
+  "intervals": [ "1993-01-01T00:00:00.000/1998-09-01T00:00:00.000" ]
+}

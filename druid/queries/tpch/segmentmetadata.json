@@ -1,0 +1,6 @@
+{
+  "queryType":"segmentMetadata",
+  "dataSource":"tpch",
+  "intervals": [ "1993-01-01T00:00:00.000/1998-09-01T00:00:00.000" ],
+  "merge" : "true"
+}

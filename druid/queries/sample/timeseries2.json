@@ -1,0 +1,10 @@
+{
+  "queryType": "timeseries",
+  "dataSource": "tpch",
+  "intervals": [ "1993-01-01/1998-01-01" ],
+  "granularity": "all",
+  "aggregations": [
+    {"type": "longSum", "fieldName": "count", "name": "count"},
+    {"type": "doubleSum", "fieldName": "o_totalprice", "name": "o_totalprice"}
+  ]
+}

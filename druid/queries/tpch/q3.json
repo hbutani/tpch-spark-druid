@@ -1,0 +1,42 @@
+{
+  "queryType": "groupBy",
+  "dataSource": "tpch",
+  "granularity": "all",
+  "dimensions": ["o_orderkey", "o_orderdate", "o_shippriority"],
+  "limitSpec": { "type": "default", "limit": 10, "columns": [
+    {"dimension" : "revenue", "direction" : "descending"},
+    "o_orderdate"
+  ]
+  },
+  "filter": {
+    "type": "and",
+    "fields": [
+      {
+        "type": "selector",
+        "dimension": "c_mktsegment",
+        "value": "BUILDING"
+      },
+      {
+        "type" : "javascript",
+        "dimension" : "o_orderdate",
+        "function" : "function(x) { return(x < '1995-03-15') }"
+      }
+    ]
+  },
+  "aggregations": [
+    { "type": "doubleSum", "name": "l_extendedprice", "fieldName": "l_extendedprice" },
+    { "type": "doubleSum", "name": "l_discount", "fieldName": "l_discount" }
+  ],
+  "postAggregations": [
+    { "type": "arithmetic",
+      "name": "revenue",
+      "fn": "-",
+      "fields": [
+        { "type": "fieldAccess", "name": "l_extendedprice", "fieldName": "l_extendedprice" },
+        { "type": "fieldAccess", "name": "l_discount", "fieldName": "l_discount" }
+      ]
+    }
+  ],
+  "intervals": [ "1995-03-15T00:00:00.000/1998-09-01T00:00:00.000" ]
+}
+
