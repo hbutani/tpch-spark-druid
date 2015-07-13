@@ -11,6 +11,14 @@
     { "type": "doubleSum", "name": "l_discount", "fieldName": "l_discount" },
     { "type": "doubleSum", "name": "l_tax", "fieldName": "l_tax" },
     {
+      "type": "javascript",
+      "name": "sum_disc_price2",
+      "fieldNames": ["sum_l_quantity", "l_discount"],
+      "fnAggregate" : "function(current, sum_l_quantity, l_discount) { return current + (sum_l_quantity * (l_discount/100.0)); }",
+      "fnCombine"   : "function(partialA, partialB) { return partialA + partialB; }",
+      "fnReset"     : "function()                   { return 0; }"
+    },
+    {
       "type": "cardinality",
       "name": "count_order",
       "fieldNames": [ "o_orderkey" ],
