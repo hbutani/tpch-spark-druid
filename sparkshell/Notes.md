@@ -290,3 +290,113 @@ ExternalSort [s_nation#35 ASC,c_nation#51 ASC,l_year#4030 ASC], true
 #### Transaltion
 - `year('dateTime('l_shipdate))` translates to a granulairty of year
 - revenue -> JSAggregate
+
+### Q8, National Market Share Query
+
+```scala
+val orderDtYear = dateTime('o_orderdate) year
+
+val dtP1 = dateTime('o_orderdate) >= dateTime("1995-01-01")
+val dtP2 = dateTime('o_orderdate) <= dateTime("1996-12-31")
+
+val q8 = sql(date"""
+select $orderDtYear as o_year,
+sum(case when s_nation = 'BRAZIL' then l_extendedprice * (1-l_discount) else 0 end) / sum(l_extendedprice * (1-l_discount)) as mkt_share
+from orderLineItemPartSupplier
+where c_region = 'AMERICA' and p_type = 'ECONOMY ANODIZED STEEL' and $dtP1 and $dtP2
+group by $orderDtYear
+order by o_year
+""")
+
+q8.show()
+```
+
+#### Spark SQL Plan
+```
+ExternalSort [o_year#4861 ASC], true
+ Aggregate false, [PartialGroup#5411], [PartialGroup#5411 AS o_year#4861,
+ (CombineSum(PartialSum#5409) / CombineSum(PartialSum#5410)) AS mkt_share#4862]
+  Aggregate true, [scalaUDF(scalaUDF(o_orderdate#4))], 
+  [scalaUDF(scalaUDF(o_orderdate#4)) AS PartialGroup#5411,
+  SUM(CASE WHEN (s_nation#35 = BRAZIL) THEN (l_extendedprice#13 * (1.0 - l_discount#14)) ELSE 0.0) AS PartialSum#5409,
+  SUM((l_extendedprice#13 * (1.0 - l_discount#14))) AS PartialSum#5410]
+   Project [o_orderdate#4,s_nation#35,l_extendedprice#13,l_discount#14]
+    Filter ((((c_region#52 = AMERICA) && (p_type#40 = ECONOMY ANODIZED STEEL)) && scalaUDF(scalaUDF(o_orderdate#4),scalaUDF(1995-01-01))) && scalaUDF(scalaUDF(o_orderdate#4),scalaUDF(1996-12-31)))
+     InMemoryColumnarTableScan [s_nation#35,o_orderdate#4,l_discount#14,c_region#52,l_extendedprice#13,p_type#40], [(c_region#52 = AMERICA),(p_type#40 = ECONOMY ANODIZED STEEL),scalaUDF(scalaUDF(o_orderdate#4),scalaUDF(1995-01-01)),scalaUDF(scalaUDF(o_orderdate#4),scalaUDF(1996-12-31))], (InMemoryRelation [o_orderkey#0,o_custkey#1,o_orderstatus#2,o_totalprice#3,o_orderdate#4,o_orderpriority#5,o_clerk#6,o_shippriority#7,o_comment#8,l_partkey#9,l_suppkey#10,l_linenumber#11,l_quantity#12,l_extendedprice#13,l_discount#14,l_tax#15,l_returnflag#16,l_linestatus#17,l_shipdate#18,l_commitdate#19,l_receiptdate#20,l_shipinstruct#21,l_shipmode#22,l_comment#23,order_year#24,ps_partkey#25,ps_suppkey#26,ps_availqty#27,ps_supplycost#28,ps_comment#29,s_name#30,s_address#31,s_phone#32,s_acctbal#33,s_comment#34,s_nation#35,s_region#36,p_name#37,p_mfgr#38,p_brand#39,p_type#40,p_size#41,p_container#42,p_retailprice#43,p_comment#44,c_name#45,c_address#46,c_phone#47,c_acctbal#48,c_mktsegment#49,c_comment#50,c_nation#51,c_region#52], true, 10000, StorageLevel(true, true, false, true, 1), (Repartition 40, false), None)
+ ```
+ 
+#### Translation
+ - orderDate range to a set of JSFilters
+ - others are SelectorFilters
+ - GBy `oDate year` -> TimeParsingExtractionFunction
+ - Sum Case -> Filtered Aggregator
+ - sum ratio -> PostAgg
+ 
+### Q9, Product Type Profit Measure Query
+
+```scala
+val orderDtYear = dateTime('o_orderdate) year
+
+val q9 = sql(date"""
+select s_nation, $orderDtYear as o_year, sum(l_extendedprice * (1 - l_discount) - ps_supplycost * l_quantity) as sum_profit
+from orderLineItemPartSupplier
+where
+   p_name like '%green%'
+group by s_nation, $orderDtYear
+order by s_nation, o_year
+""")
+
+q9.show()
+```
+
+#### Spark SQL Plan
+```
+ExternalSort [s_nation#37 ASC,o_year#322 ASC], true
+ Aggregate false, [s_nation#37,PartialGroup#1138], [s_nation#37,PartialGroup#1138 AS o_year#322,CombineSum(PartialSum#1137) AS sum_profit#323]
+  Aggregate true, [s_nation#37,scalaUDF(scalaUDF(o_orderdate#6))], [s_nation#37,scalaUDF(scalaUDF(o_orderdate#6)) AS PartialGroup#1138,SUM(((l_extendedprice#15 * (1.0 - l_discount#16)) - (ps_supplycost#30 * l_quantity#14))) AS PartialSum#1137]
+   Project [l_discount#16,ps_supplycost#30,l_quantity#14,l_extendedprice#15,s_nation#37,o_orderdate#6]
+    Filter Contains(p_name#39, green)
+     InMemoryColumnarTableScan [l_discount#16,ps_supplycost#30,l_quantity#14,l_extendedprice#15,s_nation#37,o_orderdate#6,p_name#39], [Contains(p_name#39, green)], (InMemoryRelation [o_orderkey#2,o_custkey#3,o_orderstatus#4,o_totalprice#5,o_orderdate#6,o_orderpriority#7,o_clerk#8,o_shippriority#9,o_comment#10,l_partkey#11,l_suppkey#12,l_linenumber#13,l_quantity#14,l_extendedprice#15,l_discount#16,l_tax#17,l_returnflag#18,l_linestatus#19,l_shipdate#20,l_commitdate#21,l_receiptdate#22,l_shipinstruct#23,l_shipmode#24,l_comment#25,order_year#26,ps_partkey#27,ps_suppkey#28,ps_availqty#29,ps_supplycost#30,ps_comment#31,s_name#32,s_address#33,s_phone#34,s_acctbal#35,s_comment#36,s_nation#37,s_region#38,p_name#39,p_mfgr#40,p_brand#41,p_type#42,p_size#43,p_container#44,p_retailprice#45,p_comment#46,c_name#47,c_address#48,c_phone#49,c_acctbal#50,c_mktsegment#51,c_comment#52,c_nation#53,c_region#54], true, 10000, StorageLevel(true, true, false, true, 1), (Repartition 40, false), None)
+```
+
+#### Translation
+ - GBy `oDate year` -> TimeParsingExtractionFunction
+ - GBy s_nation -> DefaultDimSpec
+ - `p_name like '%green%'` -> RegexFilter
+ - this for all time.
+ 
+### Q10, Returned Item Reporting Query
+
+```scala
+
+val dtP1 = dateTime('o_orderdate) >= dateTime("1993-10-01")
+val dtP2 = dateTime('o_orderdate) < (dateTime("1993-10-01") + 3.month)
+
+val q10 = sql(date"""
+select c_name, c_acctbal, c_nation, c_address, c_phone, c_comment,
+       sum(l_extendedprice * (1 - l_discount)) as revenue
+from orderLineItemPartSupplier
+where
+  $dtP1 and 
+  $dtP2 and
+  l_returnflag = 'R'
+group by c_name, c_acctbal, c_nation, c_address, c_phone, c_comment
+order by revenue desc
+""")
+
+q10.show()
+```
+
+#### Spark SQL Plan
+```
+Aggregate false, [c_acctbal#50,c_nation#53,c_address#48,c_name#47,c_comment#52,c_phone#49], [c_name#47,c_acctbal#50,c_nation#53,c_address#48,c_phone#49,c_comment#52,CombineSum(PartialSum#1679) AS revenue#1142]
+ Aggregate true, [c_name#47,c_acctbal#50,c_nation#53,c_address#48,c_phone#49,c_comment#52], [c_acctbal#50,c_nation#53,c_address#48,c_name#47,c_comment#52,c_phone#49,SUM((l_extendedprice#15 * (1.0 - l_discount#16))) AS PartialSum#1679]
+  Project [l_discount#16,c_acctbal#50,c_nation#53,c_address#48,c_name#47,c_comment#52,c_phone#49,l_extendedprice#15]
+   Filter ((scalaUDF(scalaUDF(o_orderdate#6),scalaUDF(1993-10-01)) && scalaUDF(scalaUDF(o_orderdate#6),scalaUDF(scalaUDF(1993-10-01),scalaUDF(P3M)))) && (l_returnflag#18 = R))
+    InMemoryColumnarTableScan [l_discount#16,c_acctbal#50,c_nation#53,c_address#48,c_name#47,c_comment#52,c_phone#49,l_returnflag#18,l_extendedprice#15,o_orderdate#6], [scalaUDF(scalaUDF(o_orderdate#6),scalaUDF(1993-10-01)),scalaUDF(scalaUDF(o_orderdate#6),scalaUDF(scalaUDF(1993-10-01),scalaUDF(P3M))),(l_returnflag#18 = R)], (InMemoryRelation [o_orderkey#2,o_custkey#3,o_orderstatus#4,o_totalprice#5,o_orderdate#6,o_orderpriority#7,o_clerk#8,o_shippriority#9,o_comment#10,l_partkey#11,l_suppkey#12,l_linenumber#13,l_quantity#14,l_extendedprice#15,l_discount#16,l_tax#17,l_returnflag#18,l_linestatus#19,l_shipdate#20,l_commitdate#21,l_receiptdate#22,l_shipinstruct#23,l_shipmode#24,l_comment#25,order_year#26,ps_partkey#27,ps_suppkey#28,ps_availqty#29,ps_supplycost#30,ps_comment#31,s_name#32,s_address#33,s_phone#34,s_acctbal#35,s_comment#36,s_nation#37,s_region#38,p_name#39,p_mfgr#40,p_brand#41,p_type#42,p_size#43,p_container#44,p_retailprice#45,p_comment#46,c_name#47,c_address#48,c_phone#49,c_acctbal#50,c_mktsegment#51,c_comment#52,c_nation#53,c_region#54], true, 10000, StorageLevel(true, true, false, true, 1), (Repartition 40, false), None)
+```
+
+#### Translation
+- GBy c_name, c_acctbal, c_nation, c_address, c_phone, c_comment -> DefaultDimSpec
+- orderDate range to a set of JSFilters
+
