@@ -1,4 +1,6 @@
-import AssemblyKeys._ // put this at the top of the file
+import AssemblyKeys._
+
+// put this at the top of the file
 
 name := "tpchdata"
 
@@ -51,6 +53,7 @@ val sparkCsvVersion = "1.1.0"
 resolvers ++= Seq(
   "Apache" at "http://repo.maven.apache.org",
   "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/",
+  Resolver.sonatypeRepo("public"),
   Resolver.sonatypeRepo("snapshots"),
   Resolver.sonatypeRepo("releases"),
   "Local Maven Repository" at "file://" + Path.userHome.absolutePath + "/.m2/repository",
@@ -66,18 +69,22 @@ libraryDependencies ++= Seq(
   "org.eclipse.jetty" % "jetty-servlet" % eclipseJettyVersion % "provided",
   "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
   "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
+  "org.apache.spark" %% "spark-hive" % sparkVersion % "provided",
   "org.apache.spark" %% "spark-catalyst" % sparkVersion % "provided",
-  "com.databricks" %% "spark-csv" % sparkCsvVersion,
-  "org.slf4j" % "slf4j-api" % slf4jVersion,
+  "com.databricks" %% "spark-csv" % sparkCsvVersion % "provided",
+  "org.slf4j" % "slf4j-api" % slf4jVersion % "provided",
   //"org.slf4j" % "slf4j-simple" % slf4jVersion,
-  "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
-  "org.slf4j" % "jul-to-slf4j" % slf4jVersion,
-  "org.slf4j" % "jcl-over-slf4j" % slf4jVersion,
-  "log4j" % "log4j" % log4jVersion,
-  "com.github.SparklineData" % "spark-datetime" % sparkdateTimeVersion,
-  "org.scalatest" %% "scalatest" % scalatestVersion % "test"
+  "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "provided",
+  "org.slf4j" % "jul-to-slf4j" % slf4jVersion % "provided",
+  "org.slf4j" % "jcl-over-slf4j" % slf4jVersion % "provided",
+  "log4j" % "log4j" % log4jVersion % "provided",
+  "com.github.SparklineData" % "spark-datetime" % sparkdateTimeVersion % "provided",
+  "org.scalatest" %% "scalatest" % scalatestVersion % "test",
+  "com.github.scopt" %% "scopt" % "3.3.0"
 )
 
 assemblySettings
 
-mainClass in assembly := Some("com.sparkline.Main")
+mainClass in assembly := Some("org.sparklinedata.tpch.hadoop.TpchGenFlattenedData")
+
+assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
