@@ -13,7 +13,8 @@ BROKERPID=`processPid broker`
 COORDPID=`processPid coordinator`
 HISTPID=`processPid historical`
 OVERLORDPID=`processPid overlord`
+REALTIMEPID=`processPid realtime`
 
-kill -9 $OVERLORDPID $COORDPID $HISTPID $BROKERPID
+kill -9 $OVERLORDPID $COORDPID $HISTPID $BROKERPID $REALTIMEPID
 
 
