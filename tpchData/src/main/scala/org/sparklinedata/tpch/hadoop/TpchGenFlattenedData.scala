@@ -2,7 +2,6 @@ package org.sparklinedata.tpch.hadoop
 
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.hive.HiveContext
 import org.sparklinedata.tpch.Functions
 
