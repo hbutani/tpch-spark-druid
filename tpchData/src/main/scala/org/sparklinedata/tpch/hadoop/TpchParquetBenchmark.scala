@@ -10,12 +10,38 @@ import org.sparklinedata.spark.dateTime.dsl.expressions._
 import scala.collection.mutable.ArrayBuffer
 import scala.language.postfixOps
 
-case class BenchmarkConfig(tpchFlatDir: String = "")
+case class BenchmarkConfig(tpchFlatDir: String = "",
+                            showResults : Boolean = false)
 
 object TpchParquetBenchmark {
 
   def registerBaseDF(sqlCtx: SQLContext, cfg: BenchmarkConfig): Unit = {
-    val df = sqlCtx.read.parquet(cfg.tpchFlatDir)
+    val df1 = sqlCtx.read.parquet(cfg.tpchFlatDir)
+
+    val df = df1.select("o_orderkey", "l_suppkey", "l_linenumber",
+      "l_quantity", "l_extendedprice",
+      "l_discount", "l_tax",
+      "l_returnflag","l_linestatus",
+      "l_shipdate", "l_commitdate",
+      "l_receiptdate", "l_shipinstruct",
+      "l_shipmode",
+      "order_year", "ps_partkey",
+      "ps_suppkey" ,"ps_availqty",
+      "ps_supplycost",
+      "s_name", "s_address",
+      "s_phone", "s_acctbal",
+      "s_nation",
+      "s_region", "p_name",
+      "p_mfgr", "p_brand",
+      "p_type", "p_size",
+      "p_container", "p_retailprice",
+      "c_name",
+      "c_address", "c_phone",
+      "c_acctbal","c_mktsegment",
+      "c_nation",
+      "c_region", "shipYear", "shipMonth"
+     )
+
     df.cache()
     df.registerTempTable("orderLineItemPartSupplier")
   }
@@ -158,6 +184,28 @@ object TpchParquetBenchmark {
 
   }
 
+  def runShowResults(sqlCtx : SQLContext, c : BenchmarkConfig) : Unit = {
+    init(sqlCtx, c)
+
+    val qs = queries(sqlCtx)
+
+    val results = ArrayBuffer[(String, String)]()
+
+    qs.foreach { q =>
+      val df: DataFrame = q._2
+      val rows = df.collect()
+      val t = (q._1, rows.mkString("\n"))
+      results += t
+    }
+
+
+    results.foreach { r =>
+      println(r._1)
+      println(r._2)
+    }
+
+  }
+
   def main(args: Array[String]) {
 
     val parser = new scopt.OptionParser[BenchmarkConfig]("tpchBenchmark") {
@@ -165,6 +213,9 @@ object TpchParquetBenchmark {
       opt[String]('t', "tpchFlatDir") required() valueName ("<tpchDir>") action { (x, c) =>
         c.copy(tpchFlatDir = x)
       } text ("the folder containing tpch flattened data")
+      opt[Boolean]('r', "showResults") action { (x, c) =>
+        c.copy(showResults = x)
+      } text ("only show results")
       help("help") text ("prints this usage text")
     }
 
@@ -177,7 +228,7 @@ object TpchParquetBenchmark {
 
     val sqlCtx = new SQLContext(sc)
 
-    run(sqlCtx, c)
+    if (c.showResults) runShowResults(sqlCtx, c) else run(sqlCtx, c)
   }
 
 }

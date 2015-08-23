@@ -47,7 +47,7 @@ val spklUdfsVersion = "0.0.1"
 val scalatestVersion = "2.2.4"
 val guavaVersion = "14.0.1"
 val eclipseJettyVersion = "8.1.14.v20131031"
-val sparkdateTimeVersion = "0.0.1"
+val sparkdateTimeVersion = "9f6589a01fdd50250a8e155d5710490e1dd353b3"
 val sparkCsvVersion = "1.1.0"
 
 resolvers ++= Seq(
