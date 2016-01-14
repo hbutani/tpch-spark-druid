@@ -183,7 +183,7 @@
       "type": "index",
       "firehose": {
         "type": "local",
-        "baseDir": "/Users/hbutani/tpch/datascale1/orderLineItemPartSupplierCustomer.sample/",
+        "baseDir": "/Users/hbutani/tpch/datascale1/orderLineItemPartSupplierCustomer/",
         "filter": "part*"
       }
     },
